@@ -1,0 +1,58 @@
+{
+  "name": "@synod/mcp-server",
+  "version": "1.0.0",
+  "description": "Synod MCP Server - authenticated agent identity, policy enforcement, and Synod platform connectivity",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "synod-mcp": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "node --watch dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "synod.md"
+  ],
+  "keywords": [
+    "mcp",
+    "synod",
+    "agent",
+    "stellar",
+    "ed25519",
+    "ai-agent"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@stellar/stellar-sdk": "^12.0.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.8"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
