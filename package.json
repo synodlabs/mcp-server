@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "synod-mcp": "./dist/index.js"
+    "synod-mcp": "dist/index.js"
   },
   "exports": {
     ".": {
