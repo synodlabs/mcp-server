@@ -57,4 +57,16 @@ describe("KeyProvider", () => {
     const signed = await provider.sign(payload);
     expect(provider.verify(payload, signed.signature)).toBe(true);
   });
+
+  it("honors SYNOD_AKP_STORAGE=memory_store", async () => {
+    vi.resetModules();
+    process.env.SYNOD_AKP_STORAGE = "memory_store";
+
+    const { resolveStorage } = await import("../../src/akp/storage/resolve.js");
+    const storage = await resolveStorage();
+
+    expect(storage.type).toBe("memory_store");
+
+    delete process.env.SYNOD_AKP_STORAGE;
+  });
 });

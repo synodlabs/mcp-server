@@ -12,10 +12,30 @@ export interface ResolvedStorage {
   clear(): Promise<void>;
 }
 
+function forcedStorageType(): StorageType | null {
+  const raw = process.env["SYNOD_AKP_STORAGE"]?.trim().toLowerCase();
+  if (!raw || raw === "auto") {
+    return null;
+  }
+
+  if (raw === "os_store" || raw === "encrypted_store" || raw === "memory_store") {
+    return raw;
+  }
+
+  throw new Error(
+    `AKP: Unsupported SYNOD_AKP_STORAGE value '${raw}'. Expected auto, os_store, encrypted_store, or memory_store.`,
+  );
+}
+
 export async function resolveStorage(): Promise<ResolvedStorage> {
   const machineId = await getMachineId();
+  const forced = forcedStorageType();
 
-  const os = await tryOSStore();
+  if (forced === "memory_store") {
+    return memoryFallback();
+  }
+
+  const os = forced === "encrypted_store" ? null : await tryOSStore();
   if (os) return {
     type: "os_store",
     async load()         { return os.get(); },

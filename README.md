@@ -267,6 +267,7 @@ port: 3666
 | `SYNOD_BASE_URL` | `https://synodai.xyz` | Synod API base URL |
 | `SYNOD_WS_URL` | derived from `SYNOD_BASE_URL` | Synod WebSocket URL |
 | `SYNOD_SKILL_URL` | `${SYNOD_BASE_URL}/skill/synod.md` | Published Synod skill URL |
+| `SYNOD_AKP_STORAGE` | `auto` | Force AKP storage backend: `auto`, `os_store`, `encrypted_store`, or `memory_store` |
 
 ---
 
