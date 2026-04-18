@@ -1,6 +1,6 @@
 {
   "name": "@synod/mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Synod MCP Server - authenticated agent identity, policy enforcement, and Synod platform connectivity",
   "type": "module",
   "main": "dist/index.js",
