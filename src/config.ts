@@ -2,7 +2,7 @@
  * config.ts — Synod platform constants
  */
 
-const DEFAULT_BASE_URL = "https://synodai.xyz";
+const DEFAULT_BASE_URL = "https://synod-backend-ddgj.onrender.com";
 const baseUrl = (process.env["SYNOD_BASE_URL"] ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 export const SYNOD_BASE_URL = baseUrl;

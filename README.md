@@ -153,7 +153,7 @@ Handshake flow:
 1. `POST /connect/init` -> receives nonce
 2. Signs `SHA256(canonical_json({ action, domain, nonce }))` with Ed25519
 3. `POST /connect/complete` -> receives `ws_ticket`
-4. Opens persistent WebSocket to `wss://synodai.xyz/agent/ws`
+4. Opens persistent WebSocket to `wss://synod-backend-ddgj.onrender.com/agent/ws`
 
 Returns:
 
@@ -264,7 +264,7 @@ port: 3666
 | Variable | Default | Description |
 |---|---|---|
 | `SYNOD_MCP_PORT` | `3666` | HTTP server port |
-| `SYNOD_BASE_URL` | `https://synodai.xyz` | Synod API base URL |
+| `SYNOD_BASE_URL` | `https://synod-backend-ddgj.onrender.com` | Synod API base URL |
 | `SYNOD_WS_URL` | derived from `SYNOD_BASE_URL` | Synod WebSocket URL |
 | `SYNOD_SKILL_URL` | `${SYNOD_BASE_URL}/skill/synod.md` | Published Synod skill URL |
 | `SYNOD_AKP_STORAGE` | `auto` | Force AKP storage backend: `auto`, `os_store`, `encrypted_store`, or `memory_store` |
