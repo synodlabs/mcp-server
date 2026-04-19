@@ -71,4 +71,37 @@ describe("SynodWebSocket", () => {
     ws.destroy();
     client = null;
   });
+
+  it("sends application-level ping messages on the heartbeat interval", async () => {
+    let pingCount = 0;
+
+    server = new WebSocketServer({ port: 0 });
+    await new Promise<void>((resolve) => server!.once("listening", () => resolve()));
+
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("Expected a TCP server address.");
+    }
+
+    server.on("connection", (socket) => {
+      socket.on("message", (raw) => {
+        if (raw.toString() === "ping") {
+          pingCount += 1;
+        }
+      });
+    });
+
+    const ws = new SynodWebSocket({
+      wsUrl: `ws://127.0.0.1:${address.port}`,
+      pingIntervalMs: 10,
+      reconnectBaseMs: 20,
+      reconnectMaxMs: 20,
+    });
+    client = ws;
+
+    ws.connect("ticket-1");
+
+    await waitFor(() => pingCount > 0, { timeoutMs: 3_000 });
+    expect(pingCount).toBeGreaterThan(0);
+  });
 });
