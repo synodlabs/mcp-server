@@ -28,12 +28,13 @@ function forcedStorageType(): StorageType | null {
 }
 
 export async function resolveStorage(): Promise<ResolvedStorage> {
-  const machineId = await getMachineId();
   const forced = forcedStorageType();
 
   if (forced === "memory_store") {
     return memoryFallback();
   }
+
+  const machineId = await getMachineId();
 
   const os = forced === "encrypted_store" ? null : await tryOSStore();
   if (os) return {

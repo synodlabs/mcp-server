@@ -102,4 +102,38 @@ describe("submitIntent", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("requires 'to' or 'destination'");
   });
+
+  it("surfaces Synod rejection reasons when the coordinator returns them", async () => {
+    const sign = vi.fn().mockResolvedValue({ signature: "sig", publicKey: "GPUB" });
+
+    identityMock.getIdentity.mockReturnValue({
+      publicKey: "GPUB",
+      keyId: "kid",
+      existed: true,
+      storageType: "encrypted_store",
+    });
+    identityMock.getProvider.mockReturnValue({ sign });
+    synodWsMock.status = "connected";
+    synodHttpMock.submitIntent.mockResolvedValue({
+      intent_id: "intent-2",
+      status: "rejected",
+      reason: "AGENT_ALLOCATION_REACHED",
+    });
+
+    const result = await submitIntent({
+      type: "payment",
+      to: "GDEST",
+      amount: "10",
+      asset: "XLM",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      intent_id: "intent-2",
+      status: "rejected",
+      reason: "AGENT_ALLOCATION_REACHED",
+      message:
+        "Intent submitted. ID: intent-2. Status: rejected. Reason: AGENT_ALLOCATION_REACHED.",
+    });
+  });
 });

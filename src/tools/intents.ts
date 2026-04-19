@@ -69,6 +69,7 @@ export async function submitIntent(rawIntent: unknown): Promise<{
   intent_id?: string;
   tx_hash?: string;
   status?: string;
+  reason?: string;
   message: string;
 }> {
   const identity = getIdentity();
@@ -106,8 +107,9 @@ export async function submitIntent(rawIntent: unknown): Promise<{
       success: true,
       intent_id: response.intent_id,
       status: response.status,
+      ...(response.reason ? { reason: response.reason } : {}),
       ...(response.tx_hash ? { tx_hash: response.tx_hash } : {}),
-      message: `Intent submitted. ID: ${response.intent_id}. Status: ${response.status}.${response.tx_hash ? ` Tx: ${response.tx_hash}` : ""}`,
+      message: `Intent submitted. ID: ${response.intent_id}. Status: ${response.status}.${response.reason ? ` Reason: ${response.reason}.` : ""}${response.tx_hash ? ` Tx: ${response.tx_hash}` : ""}`,
     };
   } catch (error) {
     return {

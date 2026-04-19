@@ -60,6 +60,7 @@ describe("KeyProvider", () => {
 
   it("honors SYNOD_AKP_STORAGE=memory_store", async () => {
     vi.resetModules();
+    vi.doUnmock("../../src/akp/storage/resolve.js");
     process.env.SYNOD_AKP_STORAGE = "memory_store";
 
     const { resolveStorage } = await import("../../src/akp/storage/resolve.js");

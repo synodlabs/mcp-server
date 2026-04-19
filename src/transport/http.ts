@@ -53,7 +53,12 @@ export interface ConnectCompleteResponse { ws_ticket: string; agent_id: string; 
 export interface ConnectStatusResponse { status: "pending" | "ready" | "not_found"; }
 
 export interface SubmitIntentRequest { intent: unknown; signature: string; public_key: string; }
-export interface SubmitIntentResponse { intent_id: string; status: string; tx_hash?: string; }
+export interface SubmitIntentResponse {
+  intent_id: string;
+  status: string;
+  tx_hash?: string;
+  reason?: string;
+}
 
 export interface PolicyResponse {
   agent_id: string;
