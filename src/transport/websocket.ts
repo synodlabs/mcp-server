@@ -2,7 +2,7 @@
  * websocket.ts â€” Persistent WebSocket client
  *
  * - Opens connection with ws_ticket query param
- * - Sends unsigned ping every 30s (connection already authenticated)
+ * - Sends an application-level ping every 30s (connection already authenticated)
  * - Auto-reconnects with exponential backoff on drop
  * - Re-authenticates before reconnecting so a fresh ws_ticket is always used
  * - Stores recent events for polling-oriented MCP clients
@@ -175,7 +175,7 @@ export class SynodWebSocket {
   private _startPing(): void {
     this._pingTimer = setInterval(() => {
       if (this._ws?.readyState === WebSocket.OPEN) {
-        this._ws.ping();
+        this._ws.send("ping");
       }
     }, this._pingIntervalMs);
   }
