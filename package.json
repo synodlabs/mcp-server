@@ -1,6 +1,6 @@
 {
   "name": "@synod/mcp-server",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Synod MCP Server - authenticated agent identity, policy enforcement, and Synod platform connectivity",
   "type": "module",
   "main": "dist/index.js",
@@ -15,8 +15,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc",
+    "build:watch": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --watch",
     "start": "node dist/index.js",
     "dev": "node --watch dist/index.js",
     "test": "vitest run",

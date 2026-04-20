@@ -4,10 +4,22 @@
 
 const DEFAULT_BASE_URL = "https://synod-backend-ddgj.onrender.com";
 const baseUrl = (process.env["SYNOD_BASE_URL"] ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+const stellarNetwork = (process.env["SYNOD_STELLAR_NETWORK"] ?? "testnet").trim().toLowerCase();
 
 export const SYNOD_BASE_URL = baseUrl;
 export const SYNOD_WS_URL = process.env["SYNOD_WS_URL"] ?? `${baseUrl.replace(/^http/i, "ws")}/agent/ws`;
 export const SYNOD_SKILL_URL = process.env["SYNOD_SKILL_URL"] ?? `${baseUrl}/skill/synod.md`;
+export const SYNOD_STELLAR_NETWORK = stellarNetwork;
+export const SYNOD_STELLAR_NETWORK_PASSPHRASE =
+  process.env["SYNOD_STELLAR_NETWORK_PASSPHRASE"]
+  ?? (stellarNetwork === "mainnet"
+    ? "Public Global Stellar Network ; September 2015"
+    : "Test SDF Network ; September 2015");
+export const SYNOD_HORIZON_URL =
+  process.env["SYNOD_HORIZON_URL"]
+  ?? (stellarNetwork === "mainnet"
+    ? "https://horizon.stellar.org"
+    : "https://horizon-testnet.stellar.org");
 
 export const ENDPOINTS = {
   connectInit:     `${SYNOD_BASE_URL}/connect/init`,

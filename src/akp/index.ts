@@ -8,6 +8,7 @@ import { generateKeypair, keypairFromBytes } from "./core/keygen.js";
 import { sign as _sign, verify as _verify, type Signature } from "./core/signer.js";
 import { resolveStorage, memoryFallback, type StorageType, type ResolvedStorage } from "./storage/resolve.js";
 import { canonicalJsonBytes } from "../lib/canonical.js";
+import { Keypair } from "@stellar/stellar-sdk";
 
 export type { Signature, StorageType };
 
@@ -57,6 +58,18 @@ export class KeyProvider {
       canonicalJsonBytes({ action: "connect", domain: "synod", nonce })
     );
     return this.sign(new Uint8Array(hash));
+  }
+
+  async withKeypair<T>(fn: (keypair: Keypair) => Promise<T> | T): Promise<T> {
+    const raw = await this._storage.load();
+    if (!raw) throw new Error("AKP: No key in storage — call init() first");
+
+    try {
+      const keypair = Keypair.fromRawEd25519Seed(Buffer.from(raw));
+      return await fn(keypair);
+    } finally {
+      raw.fill(0);
+    }
   }
 
   verify(payload: Uint8Array, signature: string): boolean {

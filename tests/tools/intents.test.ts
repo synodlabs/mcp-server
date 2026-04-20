@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const synodHttpMock = vi.hoisted(() => ({
   submitIntent: vi.fn(),
+  getPolicy: vi.fn(),
 }));
 
 const synodWsMock = vi.hoisted(() => ({
@@ -16,6 +17,36 @@ const identityMock = vi.hoisted(() => ({
 vi.mock("../../src/transport/http.js", () => ({ synodHttp: synodHttpMock }));
 vi.mock("../../src/transport/websocket.js", () => ({ synodWs: synodWsMock }));
 vi.mock("../../src/tools/identity.js", () => identityMock);
+vi.mock("@stellar/stellar-sdk", () => {
+  class MockServer {
+    async loadAccount(accountId: string) {
+      return { accountId, sequence: "1" };
+    }
+  }
+
+  class MockTransactionBuilder {
+    addOperation() { return this; }
+    addMemo() { return this; }
+    setTimeout() { return this; }
+    build() {
+      return {
+        sign: vi.fn(),
+        toXDR: () => "signed-xdr",
+      };
+    }
+  }
+
+  return {
+    Horizon: { Server: MockServer },
+    TransactionBuilder: MockTransactionBuilder,
+    Asset: class MockAsset {
+      static native() { return { code: "XLM" }; }
+      constructor(public code: string, public issuer?: string) {}
+    },
+    Memo: { text: (value: string) => ({ value }) },
+    Operation: { payment: (options: unknown) => options },
+  };
+});
 
 import { submitIntent } from "../../src/tools/intents.js";
 
@@ -23,6 +54,9 @@ describe("submitIntent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     synodWsMock.status = "disconnected";
+    synodHttpMock.getPolicy.mockResolvedValue({
+      rules: [{ type: "wallet_access", wallet_address: "GWALLET" }],
+    });
   });
 
   it("requires identity initialization before submitting", async () => {
@@ -36,6 +70,7 @@ describe("submitIntent", () => {
 
   it("validates intent requirements and canonicalizes the signed payload", async () => {
     const sign = vi.fn().mockResolvedValue({ signature: "sig", publicKey: "GPUB" });
+    const withKeypair = vi.fn(async (fn: (keypair: { publicKey: string }) => unknown) => fn({ publicKey: "GPUB" }));
 
     identityMock.getIdentity.mockReturnValue({
       publicKey: "GPUB",
@@ -43,7 +78,7 @@ describe("submitIntent", () => {
       existed: true,
       storageType: "encrypted_store",
     });
-    identityMock.getProvider.mockReturnValue({ sign });
+    identityMock.getProvider.mockReturnValue({ sign, withKeypair });
     synodWsMock.status = "connected";
     synodHttpMock.submitIntent.mockResolvedValue({
       intent_id: "intent-1",
@@ -80,6 +115,7 @@ describe("submitIntent", () => {
         },
         signature: "sig",
         public_key: "GPUB",
+        signed_transaction_xdr: "signed-xdr",
       },
       expect.any(String),
     );
@@ -105,6 +141,7 @@ describe("submitIntent", () => {
 
   it("surfaces Synod rejection reasons when the coordinator returns them", async () => {
     const sign = vi.fn().mockResolvedValue({ signature: "sig", publicKey: "GPUB" });
+    const withKeypair = vi.fn(async (fn: (keypair: { publicKey: string }) => unknown) => fn({ publicKey: "GPUB" }));
 
     identityMock.getIdentity.mockReturnValue({
       publicKey: "GPUB",
@@ -112,7 +149,7 @@ describe("submitIntent", () => {
       existed: true,
       storageType: "encrypted_store",
     });
-    identityMock.getProvider.mockReturnValue({ sign });
+    identityMock.getProvider.mockReturnValue({ sign, withKeypair });
     synodWsMock.status = "connected";
     synodHttpMock.submitIntent.mockResolvedValue({
       intent_id: "intent-2",
