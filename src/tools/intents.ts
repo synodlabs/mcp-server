@@ -5,14 +5,20 @@
  * and on-chain execution.
  */
 
+import { Asset, Horizon, Memo, Operation, TransactionBuilder, type Keypair } from "@stellar/stellar-sdk";
 import { z } from "zod";
 
-import { SYNOD_BASE_URL } from "../config.js";
+import {
+  SYNOD_BASE_URL,
+  SYNOD_HORIZON_URL,
+  SYNOD_STELLAR_NETWORK_PASSPHRASE,
+} from "../config.js";
 import { canonicalJsonBytes } from "../lib/canonical.js";
 import { getErrorMessage } from "../lib/errors.js";
 import { synodHttp } from "../transport/http.js";
 import { synodWs } from "../transport/websocket.js";
 import { getIdentity, getProvider } from "./identity.js";
+import type { KeyProvider } from "../akp/index.js";
 
 export const IntentSchema = z.object({
   type: z.string(),
@@ -20,7 +26,9 @@ export const IntentSchema = z.object({
   destination: z.string().optional(),
   amount: z.string().optional(),
   asset: z.string().optional(),
+  asset_issuer: z.string().optional(),
   memo: z.string().optional(),
+  wallet_address: z.string().optional(),
   from_asset: z.string().optional(),
   to_asset: z.string().optional(),
 }).catchall(z.unknown()).superRefine((intent, ctx) => {
@@ -97,9 +105,16 @@ export async function submitIntent(rawIntent: unknown): Promise<{
 
   try {
     const intent = normalizeIntent(parsed.data);
-    const { signature } = await getProvider().sign(canonicalJsonBytes(intent));
+    const provider = getProvider();
+    const signedTransactionXdr = await buildSignedTransactionXdr(intent, provider);
+    const { signature } = await provider.sign(canonicalJsonBytes(intent));
     const response = await synodHttp.submitIntent(
-      { intent, signature, public_key: identity.publicKey },
+      {
+        intent,
+        signature,
+        public_key: identity.publicKey,
+        signed_transaction_xdr: signedTransactionXdr,
+      },
       SYNOD_BASE_URL
     );
 
@@ -128,4 +143,80 @@ function normalizeIntent(intent: Intent): Intent {
 
   delete normalized.destination;
   return normalized;
+}
+
+async function buildSignedTransactionXdr(intent: Intent, provider: KeyProvider): Promise<string> {
+  if (intent.type !== "payment" && intent.type !== "delegate") {
+    throw new Error(`Intent type '${intent.type}' is not yet supported for Stellar transaction execution.`);
+  }
+
+  const walletAddress = await resolveWalletAddress(intent);
+  const destination = intent.to;
+  if (!destination) {
+    throw new Error("Payment intents require a destination address.");
+  }
+
+  const assetCode = intent.asset;
+  if (!assetCode) {
+    throw new Error("Payment intents require an asset.");
+  }
+  if (assetCode !== "XLM" && !intent.asset_issuer) {
+    throw new Error(`Asset '${assetCode}' requires asset_issuer in the intent.`);
+  }
+
+  const server = new Horizon.Server(SYNOD_HORIZON_URL);
+  const sourceAccount = await server.loadAccount(walletAddress);
+  const asset = assetCode === "XLM"
+    ? Asset.native()
+    : new Asset(assetCode, intent.asset_issuer);
+
+  const transaction = new TransactionBuilder(sourceAccount, {
+    fee: "100000",
+    networkPassphrase: SYNOD_STELLAR_NETWORK_PASSPHRASE,
+  })
+    .addOperation(Operation.payment({
+      destination,
+      asset,
+      amount: intent.amount ?? "0",
+    }));
+
+  if (intent.memo) {
+    transaction.addMemo(Memo.text(intent.memo));
+  }
+
+  const built = transaction
+    .setTimeout(300)
+    .build();
+
+  await provider.withKeypair((keypair: Keypair) => {
+    built.sign(keypair);
+  });
+
+  return built.toXDR();
+}
+
+async function resolveWalletAddress(intent: Intent): Promise<string> {
+  if (intent.wallet_address?.trim()) {
+    return intent.wallet_address.trim();
+  }
+
+  const identity = getIdentity();
+  if (!identity) {
+    throw new Error("Call initialize_identity first.");
+  }
+
+  const policy = await synodHttp.getPolicy(identity.publicKey, SYNOD_BASE_URL);
+  const walletRules = policy.rules.filter(
+    (rule) => rule.type === "wallet_access" && typeof rule.wallet_address === "string",
+  );
+
+  if (walletRules.length === 1) {
+    return String(walletRules[0]!.wallet_address);
+  }
+
+  if (walletRules.length === 0) {
+    throw new Error("No wallet is assigned to this agent in Synod policy.");
+  }
+
+  throw new Error("Multiple wallets are assigned to this agent. Include wallet_address in the intent.");
 }
